@@ -45,6 +45,94 @@
     .bar-wrap { background:#e2e8f0; height:9px; border-radius:999px; overflow:hidden; margin-top:8px; }
     .bar { height:9px; background:#16a34a; border-radius:999px; }
     hr { margin:20px 0; border:none; border-top:1px solid #e2e8f0; }
+
+    .card {
+      animation: softEnter .28s ease both;
+    }
+
+    .hidden {
+      display:none !important;
+    }
+
+    .tab-panel:not(.hidden) {
+      animation: fadeUp .28s ease both;
+    }
+
+    @keyframes softEnter {
+      from { opacity:0; transform:translateY(8px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(10px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    .bar {
+      transition:width .55s ease;
+    }
+
+    .chart-wrap {
+      display:grid;
+      grid-template-columns:1fr;
+      gap:14px;
+    }
+
+    .chart-card {
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .chart-title {
+      font-weight:800;
+      color:#0f172a;
+      margin-bottom:8px;
+    }
+
+    .donut-box {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:220px;
+    }
+
+    .donut-slice {
+      cursor:pointer;
+      transition:transform .18s ease, opacity .18s ease;
+      transform-origin:center;
+    }
+
+    .donut-slice:hover {
+      opacity:.82;
+      transform:scale(1.015);
+    }
+
+    .app-chart-bar-row {
+      margin-bottom:12px;
+      cursor:pointer;
+    }
+
+    .app-chart-bar-top {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .interactive-detail {
+      background:#ecfdf5;
+      border:1px solid #86efac;
+      color:#14532d;
+      border-radius:14px;
+      padding:12px;
+      font-size:13px;
+      margin-top:10px;
+      animation: fadeUp .2s ease both;
+    }
+
     @media(max-width:600px){ .app{max-width:none;width:100%;} .card{margin:12px;} .header{border-radius:0 0 22px 22px;} }
   </style>
 </head>
@@ -73,7 +161,7 @@
     </div>
   </div>
 
-  <div id="nuevo">
+  <div id="nuevo" class="tab-panel">
     <div class="card">
       <label>Fecha</label><input id="fecha" type="date">
       <label>¿Quién gastó?</label>
@@ -100,7 +188,7 @@
     </div>
   </div>
 
-  <div id="ia" class="hidden">
+  <div id="ia" class="tab-panel hidden">
     <div class="card">
       <h3>✨ Registro inteligente</h3>
       <p class="small">Escribe el gasto como lo dirías normalmente. Luego revisas y guardas.</p>
@@ -110,11 +198,11 @@
     </div>
   </div>
 
-  <div id="lista" class="hidden">
+  <div id="lista" class="tab-panel hidden">
     <div class="card"><h3>Gastos del mes seleccionado</h3><div id="expensesList">Cargando...</div></div>
   </div>
 
-  <div id="resumen" class="hidden">
+  <div id="resumen" class="tab-panel hidden">
     <div class="card">
       <h3>Resumen del mes seleccionado</h3>
       <div class="stats">
@@ -130,6 +218,23 @@
       </div>
     </div>
     <div class="card">
+      <h3>Gráficos interactivos</h3>
+      <div class="chart-wrap">
+        <div class="chart-card">
+          <div class="chart-title">Distribución por categoría</div>
+          <div id="categoryDonut" class="donut-box"></div>
+          <div id="categoryDetail" class="interactive-detail hidden"></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">Gasto por tarjeta / medio</div>
+          <div id="cardBars"></div>
+          <div id="cardDetail" class="interactive-detail hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <h3>Top categorías</h3><div id="topCategories"></div>
       <hr>
       <h3>Resumen por tarjeta</h3><div id="cardSummary"></div>
@@ -138,7 +243,7 @@
     </div>
   </div>
 
-  <div id="graficos" class="hidden">
+  <div id="graficos" class="tab-panel hidden">
     <div class="card">
       <h3>📊 Gráficos y dashboards</h3>
       <p class="small">Los dashboards del Sheet se sincronizan automáticamente al entrar a esta pestaña.</p>
@@ -173,8 +278,141 @@ async function actualizarDatos(showError=true){try{const cfg=await gas("getConfi
 function renderEverything(){renderHeaderTotal();renderList();renderSummary();}
 function renderHeaderTotal(){const f=getFilteredExpenses(),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0);document.getElementById("headerTotal").textContent=money(totalPen,"PEN");document.getElementById("headerMonth").textContent=`${MONTHS[selectedMonth]} ${selectedYear}`;}
 function renderList(){const list=document.getElementById("expensesList"),f=getFilteredExpenses();if(!f.length){list.innerHTML="<div class='empty'>No hay gastos en este mes.</div>";return;}list.innerHTML=f.map(e=>{const catId=normalizeCat(e.categoria),cat=CATEGORIES.find(c=>c.id===catId)||{emoji:"📦",label:e.categoria};return `<div class="expense"><div><strong>${cat.emoji} ${escapeHtml(e.descripcion)}</strong><div class="small">${escapeHtml(e.fecha)} · ${escapeHtml(e.quien)} · ${escapeHtml(e.categoria)} · ${escapeHtml(e.tarjeta)}</div></div><div class="amount">${money(e.monto,e.moneda)}</div></div>`;}).join("");}
-function renderSummary(){const f=getFilteredExpenses(),sergioPen=totalBy(f,"Sergio","PEN"),alePen=totalBy(f,"Ale","PEN"),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0),totalUsd=f.filter(e=>e.moneda==="USD").reduce((a,e)=>a+Number(e.monto||0),0),equivalent=totalPen+totalUsd*APP_USD_PEN;document.getElementById("sumSergioPen").textContent=money(sergioPen,"PEN");document.getElementById("sumAlePen").textContent=money(alePen,"PEN");document.getElementById("sumPen").textContent=money(totalPen,"PEN");document.getElementById("sumUsd").textContent=money(totalUsd,"USD");document.getElementById("sumEquivalent").textContent=money(equivalent,"PEN");renderTopCategories(f);renderCardSummary(f);renderBudgets(f);}
+function renderSummary(){const f=getFilteredExpenses(),sergioPen=totalBy(f,"Sergio","PEN"),alePen=totalBy(f,"Ale","PEN"),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0),totalUsd=f.filter(e=>e.moneda==="USD").reduce((a,e)=>a+Number(e.monto||0),0),equivalent=totalPen+totalUsd*APP_USD_PEN;document.getElementById("sumSergioPen").textContent=money(sergioPen,"PEN");document.getElementById("sumAlePen").textContent=money(alePen,"PEN");document.getElementById("sumPen").textContent=money(totalPen,"PEN");document.getElementById("sumUsd").textContent=money(totalUsd,"USD");document.getElementById("sumEquivalent").textContent=money(equivalent,"PEN");renderInteractiveCharts(f);renderTopCategories(f);renderCardSummary(f);renderBudgets(f);}
 function totalBy(list,who,currency){return list.filter(e=>e.quien===who&&e.moneda===currency).reduce((a,e)=>a+Number(e.monto||0),0);}
+
+function getCategoryTotals(list){
+  const totals={};
+  list.forEach(e=>{
+    const catId=normalizeCat(e.categoria);
+    const amount=e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0);
+    totals[catId]=(totals[catId]||0)+amount;
+  });
+  return totals;
+}
+
+function getCardTotals(list){
+  const cards={};
+  list.forEach(e=>{
+    const card=String(e.tarjeta||"Sin tarjeta");
+    const amount=Number(e.monto||0);
+    if(!cards[card])cards[card]={pen:0,usd:0,equivalent:0,count:0};
+    cards[card].count++;
+    if(e.moneda==="USD"){
+      cards[card].usd+=amount;
+      cards[card].equivalent+=amount*APP_USD_PEN;
+    }else{
+      cards[card].pen+=amount;
+      cards[card].equivalent+=amount;
+    }
+  });
+  return cards;
+}
+
+function renderInteractiveCharts(list){
+  renderCategoryDonut(list);
+  renderCardBars(list);
+}
+
+function renderCategoryDonut(list){
+  const box=document.getElementById("categoryDonut");
+  const detail=document.getElementById("categoryDetail");
+  if(!box)return;
+
+  const totals=getCategoryTotals(list);
+  const entries=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((a,e)=>a+e[1],0);
+
+  if(!entries.length||total<=0){
+    box.innerHTML="<div class='empty'>Sin datos para graficar.</div>";
+    if(detail)detail.classList.add("hidden");
+    return;
+  }
+
+  const colors=["#16a34a","#22c55e","#84cc16","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#64748b"];
+  const cx=110,cy=110,r=82,inner=48;
+  let angle=0;
+
+  function arcPath(startAngle,endAngle){
+    const startOuter=point(cx,cy,r,endAngle);
+    const endOuter=point(cx,cy,r,startAngle);
+    const startInner=point(cx,cy,inner,endAngle);
+    const endInner=point(cx,cy,inner,startAngle);
+    const largeArc=endAngle-startAngle>180?1:0;
+    return `M ${startOuter.x} ${startOuter.y} A ${r} ${r} 0 ${largeArc} 0 ${endOuter.x} ${endOuter.y} L ${endInner.x} ${endInner.y} A ${inner} ${inner} 0 ${largeArc} 1 ${startInner.x} ${startInner.y} Z`;
+  }
+
+  function point(cx,cy,r,a){
+    const rad=(a-90)*Math.PI/180;
+    return {x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};
+  }
+
+  const paths=entries.map(([id,value],i)=>{
+    const start=angle;
+    const end=angle+(value/total)*360;
+    angle=end;
+    const cat=CATEGORIES.find(c=>c.id===id)||{label:id,emoji:"📦"};
+    return `<path class="donut-slice" d="${arcPath(start,end)}" fill="${colors[i%colors.length]}" onclick="showCategoryDetail('${id}',${value},${total})"><title>${cat.label}: ${money(value,"PEN")}</title></path>`;
+  }).join("");
+
+  box.innerHTML=`
+    <svg width="240" height="240" viewBox="0 0 220 220" role="img">
+      ${paths}
+      <circle cx="${cx}" cy="${cy}" r="${inner-2}" fill="#f8fafc"></circle>
+      <text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">Total</text>
+      <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="12" fill="#15803d">${money(total,"PEN")}</text>
+    </svg>
+  `;
+}
+
+function showCategoryDetail(id,value,total){
+  const detail=document.getElementById("categoryDetail");
+  const cat=CATEGORIES.find(c=>c.id===id)||{label:id,emoji:"📦"};
+  const pct=total>0?Math.round(value/total*100):0;
+  detail.innerHTML=`<strong>${cat.emoji} ${cat.label}</strong><br>${money(value,"PEN")} · ${pct}% del gasto equivalente del mes.`;
+  detail.classList.remove("hidden");
+}
+
+function renderCardBars(list){
+  const box=document.getElementById("cardBars");
+  const detail=document.getElementById("cardDetail");
+  if(!box)return;
+
+  const cards=getCardTotals(list);
+  const entries=Object.entries(cards).sort((a,b)=>b[1].equivalent-a[1].equivalent);
+  const max=entries.length?entries[0][1].equivalent:0;
+
+  if(!entries.length){
+    box.innerHTML="<div class='empty'>Sin datos por tarjeta.</div>";
+    if(detail)detail.classList.add("hidden");
+    return;
+  }
+
+  box.innerHTML=entries.map(([card,t])=>{
+    const pct=max>0?Math.round(t.equivalent/max*100):0;
+    return `
+      <div class="app-chart-bar-row" onclick="showCardDetail('${escapeAttr(card)}',${t.pen},${t.usd},${t.equivalent},${t.count})">
+        <div class="app-chart-bar-top">
+          <span>💳 ${escapeHtml(card)}</span>
+          <span>${money(t.equivalent,"PEN")}</span>
+        </div>
+        <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+      </div>
+    `;
+  }).join("");
+}
+
+function showCardDetail(card,pen,usd,equivalent,count){
+  const detail=document.getElementById("cardDetail");
+  detail.innerHTML=`<strong>💳 ${escapeHtml(card)}</strong><br>Soles: ${money(pen,"PEN")} · Dólares: ${money(usd,"USD")}<br>Total equivalente: ${money(equivalent,"PEN")} · ${count} gasto(s).`;
+  detail.classList.remove("hidden");
+}
+
+function escapeAttr(text){
+  return String(text||"").replaceAll("\\","\\\\").replaceAll("'","\\'").replaceAll('"',"&quot;");
+}
+
+
 function renderTopCategories(list){const totals={};list.forEach(e=>{const catId=normalizeCat(e.categoria),amount=e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0);totals[catId]=(totals[catId]||0)+amount;});const entries=Object.entries(totals).sort((a,b)=>b[1]-a[1]),max=entries.length?entries[0][1]:0;if(!entries.length){document.getElementById("topCategories").innerHTML="<div class='empty'>Sin gastos en este mes.</div>";return;}document.getElementById("topCategories").innerHTML=entries.map(([id,total])=>{const cat=CATEGORIES.find(c=>c.id===id)||{emoji:"📦",label:id},pct=max>0?Math.round(total/max*100):0;return `<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;gap:10px;"><strong>${cat.emoji} ${cat.label}</strong><strong>${money(total,"PEN")}</strong></div><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div></div>`;}).join("");}
 function renderCardSummary(list){const box=document.getElementById("cardSummary");if(!list.length){box.innerHTML="<div class='empty'>Sin gastos por tarjeta en este mes.</div>";return;}const cards={};list.forEach(e=>{const card=String(e.tarjeta||"Sin tarjeta"),amount=Number(e.monto||0);if(!cards[card])cards[card]={pen:0,usd:0,equivalent:0};if(e.moneda==="USD"){cards[card].usd+=amount;cards[card].equivalent+=amount*APP_USD_PEN;}else{cards[card].pen+=amount;cards[card].equivalent+=amount;}});const entries=Object.entries(cards).sort((a,b)=>b[1].equivalent-a[1].equivalent),max=entries.length?entries[0][1].equivalent:0;box.innerHTML=entries.map(([card,totals])=>{const pct=max>0?Math.round(totals.equivalent/max*100):0;return `<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><strong>💳 ${escapeHtml(card)}</strong><div class="small">Soles: ${money(totals.pen,"PEN")} · Dólares: ${money(totals.usd,"USD")}</div></div><strong>${money(totals.equivalent,"PEN")}</strong></div><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div></div>`;}).join("");}
 function renderBudgets(list){const box=document.getElementById("budgetStatus");if(!Object.keys(budgets).length){box.innerHTML="<div class='empty'>No hay presupuestos cargados.</div>";return;}let html="";Object.keys(budgets).forEach(cat=>{const spent=list.filter(e=>normalizeCat(e.categoria)===normalizeCat(cat)).reduce((a,e)=>a+(e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0)),0),budget=Number(budgets[cat]||0),pct=budget?spent/budget:0;let icon="🟢";if(pct>=0.8)icon="🟡";if(pct>1)icon="🔴";html+=`<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;gap:10px;"><strong>${icon} ${cat}</strong><strong>${money(spent)} / ${money(budget)}</strong></div><div class="bar-wrap"><div class="bar" style="width:${Math.min(pct*100,100)}%"></div></div><div class="small">${Math.round(pct*100)}% usado</div></div>`;});box.innerHTML=html;}

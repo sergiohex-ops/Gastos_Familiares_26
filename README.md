@@ -20,3 +20,8 @@ Sube esta carpeta a Vercel como proyecto.
 ## Actualización automática
 
 Esta versión refresca datos cada 30 segundos y sincroniza dashboards al abrir la pestaña Gráficos.
+
+
+## Animaciones y gráficos
+
+Incluye animaciones suaves, dona interactiva por categoría y barras interactivas por tarjeta.
