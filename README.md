@@ -15,3 +15,8 @@ GAS_WEBAPP_URL=https://script.google.com/macros/s/AKfycbxzcGxB40iS2BgMfCIjvRrruW
 ## 3. Deploy
 
 Sube esta carpeta a Vercel como proyecto.
+
+
+## Actualización automática
+
+Esta versión refresca datos cada 30 segundos y sincroniza dashboards al abrir la pestaña Gráficos.

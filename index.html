@@ -111,12 +111,10 @@
   </div>
 
   <div id="lista" class="hidden">
-    <div class="card"><button class="secondary" onclick="actualizarDatos()">🔄 Actualizar datos</button></div>
     <div class="card"><h3>Gastos del mes seleccionado</h3><div id="expensesList">Cargando...</div></div>
   </div>
 
   <div id="resumen" class="hidden">
-    <div class="card"><button class="secondary" onclick="actualizarDatos()">🔄 Actualizar datos</button></div>
     <div class="card">
       <h3>Resumen del mes seleccionado</h3>
       <div class="stats">
@@ -142,8 +140,9 @@
 
   <div id="graficos" class="hidden">
     <div class="card">
-      <button class="save" onclick="actualizarDashboards()">📊 Actualizar dashboards</button>
-      <p style="font-size:12px;text-align:center;margin-top:10px;color:#64748b;">Actualiza gráficos y presupuestos del Sheet.</p>
+      <h3>📊 Gráficos y dashboards</h3>
+      <p class="small">Los dashboards del Sheet se sincronizan automáticamente al entrar a esta pestaña.</p>
+      <div id="dashboardSyncStatus" class="small" style="margin-top:10px;">Sincronización pendiente.</div>
     </div>
   </div>
 </div>
@@ -167,10 +166,10 @@ function selectWho(who){selectedWho=who;document.querySelectorAll("[data-who]").
 function selectCard(card){selectedCard=card;document.querySelectorAll("[data-card]").forEach(b=>b.classList.toggle("active",b.dataset.card===card));}
 function selectCategory(cat){selectedCategory=cat;document.querySelectorAll("[data-cat]").forEach(b=>b.classList.toggle("active",b.dataset.cat===cat));}
 function selectCurrency(currency){selectedCurrency=currency;document.querySelectorAll("[data-currency]").forEach(b=>b.classList.toggle("active",b.dataset.currency===currency));}
-function showTab(tab){["nuevo","ia","lista","resumen","graficos"].forEach(id=>{document.getElementById(id).classList.toggle("hidden",id!==tab);document.getElementById("btn"+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle("active",id===tab);});if(tab==="resumen")renderSummary();}
+function showTab(tab){["nuevo","ia","lista","resumen","graficos"].forEach(id=>{document.getElementById(id).classList.toggle("hidden",id!==tab);document.getElementById("btn"+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle("active",id===tab);});if(tab==="lista"||tab==="resumen")actualizarDatos(false);if(tab==="resumen")renderSummary();if(tab==="graficos")sincronizarDashboardsAutomatico();}
 function parseIaText(){const raw=document.getElementById("iaText").value.trim();if(!raw)return alert("Escribe un gasto primero.");const text=raw.toLowerCase();let who=selectedWho;if(text.includes("ale")||text.includes("alexandra"))who="Ale";if(text.includes("sergio")||text.includes("yo "))who="Sergio";let currency=(text.includes("dólar")||text.includes("dolar")||text.includes("usd")||text.includes("$"))?"USD":"PEN";let amount="";const amountMatch=text.match(/(?:s\/\.?|s\/|\$)?\s*(\d+(?:[.,]\d+)?)/);if(amountMatch)amount=amountMatch[1].replace(",",".");let card=who==="Ale"?"BCP Ale":"BCP Sergio";if(text.includes("bcp ale"))card="BCP Ale";else if(text.includes("bcp sergio"))card="BCP Sergio";else if(text.includes("diners"))card="Diners";else if(text.includes("yape"))card="Yape";else if(text.includes("bcp"))card=who==="Ale"?"BCP Ale":"BCP Sergio";const category=normalizeCat(text);let description=raw.replace(/ale|sergio|gast[oó]|gast[eé]|compr[oó]|compr[eé]|soles|d[oó]lares|usd|bcp ale|bcp sergio|diners|yape|con|por|s\/\.?/ig,"").replace(/\$/g,"").replace(/\d+(?:[.,]\d+)?/g,"").trim();if(!description){const catObj=CATEGORIES.find(c=>c.id===category);description=catObj?catObj.label:"Gasto";}selectWho(who);selectCard(card);selectCategory(category);selectCurrency(currency);document.getElementById("descripcion").value=description;document.getElementById("monto").value=amount;document.getElementById("iaText").value="";showTab("nuevo");alert("✨ Gasto interpretado. Revísalo y presiona Guardar gasto.");}
 async function saveExpense(){const fecha=document.getElementById("fecha").value||todayInputValue(),descripcion=document.getElementById("descripcion").value.trim(),monto=document.getElementById("monto").value;if(!descripcion||!monto)return alert("Falta descripción o monto.");try{await gas("addExpense",{data:{fecha,quien:selectedWho,categoria:selectedCategory,descripcion,monto,moneda:selectedCurrency,tarjeta:selectedCard}});document.getElementById("descripcion").value="";document.getElementById("monto").value="";setTodayDefault();const d=parseExpenseDate(fecha);selectedMonth=d.getMonth();selectedYear=d.getFullYear();await actualizarDatos();alert("✅ Gasto guardado");}catch(e){alert("Error al guardar: "+e.message);}}
-async function actualizarDatos(){try{const cfg=await gas("getConfigApp");if(cfg&&cfg.usdPen)APP_USD_PEN=Number(String(cfg.usdPen).replace(",","."))||3.80;expenses=await gas("getExpenses");budgets=await gas("getBudgetsApp");renderMonthYearFilters();renderEverything();}catch(e){alert("Error al actualizar datos: "+e.message);}}
+async function actualizarDatos(showError=true){try{const cfg=await gas("getConfigApp");if(cfg&&cfg.usdPen)APP_USD_PEN=Number(String(cfg.usdPen).replace(",","."))||3.80;expenses=await gas("getExpenses");budgets=await gas("getBudgetsApp");renderMonthYearFilters();renderEverything();}catch(e){if(showError)alert("Error al actualizar datos: "+e.message);}}
 function renderEverything(){renderHeaderTotal();renderList();renderSummary();}
 function renderHeaderTotal(){const f=getFilteredExpenses(),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0);document.getElementById("headerTotal").textContent=money(totalPen,"PEN");document.getElementById("headerMonth").textContent=`${MONTHS[selectedMonth]} ${selectedYear}`;}
 function renderList(){const list=document.getElementById("expensesList"),f=getFilteredExpenses();if(!f.length){list.innerHTML="<div class='empty'>No hay gastos en este mes.</div>";return;}list.innerHTML=f.map(e=>{const catId=normalizeCat(e.categoria),cat=CATEGORIES.find(c=>c.id===catId)||{emoji:"📦",label:e.categoria};return `<div class="expense"><div><strong>${cat.emoji} ${escapeHtml(e.descripcion)}</strong><div class="small">${escapeHtml(e.fecha)} · ${escapeHtml(e.quien)} · ${escapeHtml(e.categoria)} · ${escapeHtml(e.tarjeta)}</div></div><div class="amount">${money(e.monto,e.moneda)}</div></div>`;}).join("");}
@@ -179,9 +178,28 @@ function totalBy(list,who,currency){return list.filter(e=>e.quien===who&&e.moned
 function renderTopCategories(list){const totals={};list.forEach(e=>{const catId=normalizeCat(e.categoria),amount=e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0);totals[catId]=(totals[catId]||0)+amount;});const entries=Object.entries(totals).sort((a,b)=>b[1]-a[1]),max=entries.length?entries[0][1]:0;if(!entries.length){document.getElementById("topCategories").innerHTML="<div class='empty'>Sin gastos en este mes.</div>";return;}document.getElementById("topCategories").innerHTML=entries.map(([id,total])=>{const cat=CATEGORIES.find(c=>c.id===id)||{emoji:"📦",label:id},pct=max>0?Math.round(total/max*100):0;return `<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;gap:10px;"><strong>${cat.emoji} ${cat.label}</strong><strong>${money(total,"PEN")}</strong></div><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div></div>`;}).join("");}
 function renderCardSummary(list){const box=document.getElementById("cardSummary");if(!list.length){box.innerHTML="<div class='empty'>Sin gastos por tarjeta en este mes.</div>";return;}const cards={};list.forEach(e=>{const card=String(e.tarjeta||"Sin tarjeta"),amount=Number(e.monto||0);if(!cards[card])cards[card]={pen:0,usd:0,equivalent:0};if(e.moneda==="USD"){cards[card].usd+=amount;cards[card].equivalent+=amount*APP_USD_PEN;}else{cards[card].pen+=amount;cards[card].equivalent+=amount;}});const entries=Object.entries(cards).sort((a,b)=>b[1].equivalent-a[1].equivalent),max=entries.length?entries[0][1].equivalent:0;box.innerHTML=entries.map(([card,totals])=>{const pct=max>0?Math.round(totals.equivalent/max*100):0;return `<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><strong>💳 ${escapeHtml(card)}</strong><div class="small">Soles: ${money(totals.pen,"PEN")} · Dólares: ${money(totals.usd,"USD")}</div></div><strong>${money(totals.equivalent,"PEN")}</strong></div><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div></div>`;}).join("");}
 function renderBudgets(list){const box=document.getElementById("budgetStatus");if(!Object.keys(budgets).length){box.innerHTML="<div class='empty'>No hay presupuestos cargados.</div>";return;}let html="";Object.keys(budgets).forEach(cat=>{const spent=list.filter(e=>normalizeCat(e.categoria)===normalizeCat(cat)).reduce((a,e)=>a+(e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0)),0),budget=Number(budgets[cat]||0),pct=budget?spent/budget:0;let icon="🟢";if(pct>=0.8)icon="🟡";if(pct>1)icon="🔴";html+=`<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;gap:10px;"><strong>${icon} ${cat}</strong><strong>${money(spent)} / ${money(budget)}</strong></div><div class="bar-wrap"><div class="bar" style="width:${Math.min(pct*100,100)}%"></div></div><div class="small">${Math.round(pct*100)}% usado</div></div>`;});box.innerHTML=html;}
-async function actualizarDashboards(){const btns=document.querySelectorAll("button");btns.forEach(b=>b.disabled=true);try{await gas("actualizarDashboardsDesdeApp");alert("✅ Dashboards actualizados");}catch(e){alert("Error: "+e.message);}finally{btns.forEach(b=>b.disabled=false);}}
+let dashboardSyncing=false;
+async function sincronizarDashboardsAutomatico(){
+  if(dashboardSyncing) return;
+  dashboardSyncing=true;
+  const status=document.getElementById("dashboardSyncStatus");
+  if(status) status.textContent="Sincronizando dashboards...";
+  try{
+    await gas("actualizarDashboardsDesdeApp");
+    if(status) status.textContent="✅ Dashboards sincronizados correctamente.";
+  }catch(e){
+    if(status) status.textContent="⚠️ No se pudo sincronizar: "+e.message;
+  }finally{
+    dashboardSyncing=false;
+  }
+}
+
+async function actualizarDashboards(){
+  await sincronizarDashboardsAutomatico();
+}
 function escapeHtml(text){return String(text||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
 renderCategoryButtons();setTodayDefault();actualizarDatos();
+setInterval(()=>actualizarDatos(false),30000);
 </script>
 </body>
 </html>
