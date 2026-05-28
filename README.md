@@ -25,3 +25,8 @@ Esta versión refresca datos cada 30 segundos y sincroniza dashboards al abrir l
 ## Animaciones y gráficos
 
 Incluye animaciones suaves, dona interactiva por categoría y barras interactivas por tarjeta.
+
+
+## Face ID / Passkeys
+
+Esta versión agrega una pantalla de bloqueo local con Passkeys/WebAuthn. La credencial se guarda en el dispositivo del usuario. No es autenticación bancaria de servidor; es protección local para la PWA.
