@@ -133,6 +133,29 @@
       animation: fadeUp .2s ease both;
     }
 
+
+    .insight {
+      background:linear-gradient(135deg,#ecfdf5,#f0fdf4);
+      border:1px solid #bbf7d0;
+      border-radius:16px;
+      padding:14px;
+      margin-bottom:12px;
+      animation: fadeUp .25s ease both;
+    }
+
+    .insight-title {
+      font-size:13px;
+      font-weight:900;
+      color:#166534;
+      margin-bottom:6px;
+    }
+
+    .insight-text {
+      font-size:14px;
+      line-height:1.45;
+      color:#14532d;
+    }
+
     @media(max-width:600px){ .app{max-width:none;width:100%;} .card{margin:12px;} .header{border-radius:0 0 22px 22px;} }
   </style>
 </head>
@@ -218,6 +241,11 @@
       </div>
     </div>
     <div class="card">
+      <h3>🧠 Insights automáticos</h3>
+      <div id="insightsBox"></div>
+    </div>
+
+    <div class="card">
       <h3>Gráficos interactivos</h3>
       <div class="chart-wrap">
         <div class="chart-card">
@@ -278,8 +306,96 @@ async function actualizarDatos(showError=true){try{const cfg=await gas("getConfi
 function renderEverything(){renderHeaderTotal();renderList();renderSummary();}
 function renderHeaderTotal(){const f=getFilteredExpenses(),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0);document.getElementById("headerTotal").textContent=money(totalPen,"PEN");document.getElementById("headerMonth").textContent=`${MONTHS[selectedMonth]} ${selectedYear}`;}
 function renderList(){const list=document.getElementById("expensesList"),f=getFilteredExpenses();if(!f.length){list.innerHTML="<div class='empty'>No hay gastos en este mes.</div>";return;}list.innerHTML=f.map(e=>{const catId=normalizeCat(e.categoria),cat=CATEGORIES.find(c=>c.id===catId)||{emoji:"📦",label:e.categoria};return `<div class="expense"><div><strong>${cat.emoji} ${escapeHtml(e.descripcion)}</strong><div class="small">${escapeHtml(e.fecha)} · ${escapeHtml(e.quien)} · ${escapeHtml(e.categoria)} · ${escapeHtml(e.tarjeta)}</div></div><div class="amount">${money(e.monto,e.moneda)}</div></div>`;}).join("");}
-function renderSummary(){const f=getFilteredExpenses(),sergioPen=totalBy(f,"Sergio","PEN"),alePen=totalBy(f,"Ale","PEN"),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0),totalUsd=f.filter(e=>e.moneda==="USD").reduce((a,e)=>a+Number(e.monto||0),0),equivalent=totalPen+totalUsd*APP_USD_PEN;document.getElementById("sumSergioPen").textContent=money(sergioPen,"PEN");document.getElementById("sumAlePen").textContent=money(alePen,"PEN");document.getElementById("sumPen").textContent=money(totalPen,"PEN");document.getElementById("sumUsd").textContent=money(totalUsd,"USD");document.getElementById("sumEquivalent").textContent=money(equivalent,"PEN");renderInteractiveCharts(f);renderTopCategories(f);renderCardSummary(f);renderBudgets(f);}
+function renderSummary(){const f=getFilteredExpenses(),sergioPen=totalBy(f,"Sergio","PEN"),alePen=totalBy(f,"Ale","PEN"),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0),totalUsd=f.filter(e=>e.moneda==="USD").reduce((a,e)=>a+Number(e.monto||0),0),equivalent=totalPen+totalUsd*APP_USD_PEN;document.getElementById("sumSergioPen").textContent=money(sergioPen,"PEN");document.getElementById("sumAlePen").textContent=money(alePen,"PEN");document.getElementById("sumPen").textContent=money(totalPen,"PEN");document.getElementById("sumUsd").textContent=money(totalUsd,"USD");document.getElementById("sumEquivalent").textContent=money(equivalent,"PEN");renderInsights(f);renderInteractiveCharts(f);renderTopCategories(f);renderCardSummary(f);renderBudgets(f);}
 function totalBy(list,who,currency){return list.filter(e=>e.quien===who&&e.moneda===currency).reduce((a,e)=>a+Number(e.monto||0),0);}
+
+
+function renderInsights(list){
+  const box=document.getElementById("insightsBox");
+  if(!box)return;
+
+  if(!list.length){
+    box.innerHTML="<div class='empty'>Sin suficientes datos para generar insights.</div>";
+    return;
+  }
+
+  const totalEquivalent=list.reduce((a,e)=>{
+    return a+(e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0));
+  },0);
+
+  const insights=[];
+  const totalsByCategory=getCategoryTotals(list);
+  const categoryEntries=Object.entries(totalsByCategory).sort((a,b)=>b[1]-a[1]);
+
+  if(categoryEntries.length && totalEquivalent>0){
+    const [topCat,topValue]=categoryEntries[0];
+    const cat=CATEGORIES.find(c=>c.id===topCat)||{emoji:"📦",label:topCat};
+    const pct=Math.round(topValue/totalEquivalent*100);
+    insights.push({
+      title:`${cat.emoji} Categoría dominante`,
+      text:`${cat.label} representa aproximadamente ${pct}% del gasto equivalente del mes (${money(topValue,"PEN")}).`
+    });
+  }
+
+  const totalsByCard=getCardTotals(list);
+  const cardEntries=Object.entries(totalsByCard).sort((a,b)=>b[1].equivalent-a[1].equivalent);
+
+  if(cardEntries.length && totalEquivalent>0){
+    const [topCard,cardData]=cardEntries[0];
+    const pct=Math.round(cardData.equivalent/totalEquivalent*100);
+    insights.push({
+      title:"💳 Tarjeta más utilizada",
+      text:`${topCard} concentra aproximadamente ${pct}% del gasto familiar equivalente (${money(cardData.equivalent,"PEN")}).`
+    });
+  }
+
+  const avg=totalEquivalent/list.length;
+  insights.push({
+    title:"📊 Ticket promedio",
+    text:`El gasto promedio por movimiento este mes es ${money(avg,"PEN")} equivalente.`
+  });
+
+  const days=new Date(selectedYear,Number(selectedMonth)+1,0).getDate();
+  const today=new Date();
+  const isCurrentMonth=today.getMonth()===Number(selectedMonth)&&today.getFullYear()===Number(selectedYear);
+  const currentDay=isCurrentMonth?Math.max(1,today.getDate()):days;
+  const projected=(totalEquivalent/currentDay)*days;
+
+  insights.push({
+    title:"📈 Proyección fin de mes",
+    text:`Si mantienen este ritmo, cerrarían el mes alrededor de ${money(projected,"PEN")} equivalente.`
+  });
+
+  const biggest=list.reduce((max,e)=>{
+    const amount=e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0);
+    return amount>(max.amount||0)?{amount,descripcion:e.descripcion||"Gasto"}:max;
+  },{});
+
+  if(biggest.amount){
+    insights.push({
+      title:"🏆 Mayor gasto",
+      text:`"${biggest.descripcion}" fue el gasto más alto del mes con ${money(biggest.amount,"PEN")} equivalente.`
+    });
+  }
+
+  const alessia=list.filter(e=>normalizeCat(e.categoria)==="alessia")
+    .reduce((a,e)=>a+(e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0)),0);
+
+  if(alessia>0){
+    insights.push({
+      title:"👶 Gastos Alessia",
+      text:`Los gastos relacionados a Alessia suman ${money(alessia,"PEN")} equivalente este mes.`
+    });
+  }
+
+  box.innerHTML=insights.map(i=>`
+    <div class="insight">
+      <div class="insight-title">${i.title}</div>
+      <div class="insight-text">${i.text}</div>
+    </div>
+  `).join("");
+}
+
 
 function getCategoryTotals(list){
   const totals={};
@@ -331,7 +447,27 @@ function renderCategoryDonut(list){
 
   const colors=["#16a34a","#22c55e","#84cc16","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#64748b"];
   const cx=110,cy=110,r=82,inner=48;
+
+  if(entries.length===1){
+    const [id,value]=entries[0];
+    const cat=CATEGORIES.find(c=>c.id===id)||{label:id,emoji:"📦"};
+    box.innerHTML=`
+      <svg width="240" height="240" viewBox="0 0 220 220" role="img">
+        <circle class="donut-slice" cx="${cx}" cy="${cy}" r="65" fill="none" stroke="${colors[0]}" stroke-width="34" onclick="showCategoryDetail('${id}',${value},${total})"></circle>
+        <circle cx="${cx}" cy="${cy}" r="${inner-2}" fill="#f8fafc"></circle>
+        <text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">Total</text>
+        <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="12" fill="#15803d">${money(total,"PEN")}</text>
+      </svg>
+    `;
+    return;
+  }
+
   let angle=0;
+
+  function point(cx,cy,r,a){
+    const rad=(a-90)*Math.PI/180;
+    return {x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};
+  }
 
   function arcPath(startAngle,endAngle){
     const startOuter=point(cx,cy,r,endAngle);
@@ -340,11 +476,6 @@ function renderCategoryDonut(list){
     const endInner=point(cx,cy,inner,startAngle);
     const largeArc=endAngle-startAngle>180?1:0;
     return `M ${startOuter.x} ${startOuter.y} A ${r} ${r} 0 ${largeArc} 0 ${endOuter.x} ${endOuter.y} L ${endInner.x} ${endInner.y} A ${inner} ${inner} 0 ${largeArc} 1 ${startInner.x} ${startInner.y} Z`;
-  }
-
-  function point(cx,cy,r,a){
-    const rad=(a-90)*Math.PI/180;
-    return {x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};
   }
 
   const paths=entries.map(([id,value],i)=>{
@@ -364,6 +495,7 @@ function renderCategoryDonut(list){
     </svg>
   `;
 }
+
 
 function showCategoryDetail(id,value,total){
   const detail=document.getElementById("categoryDetail");
