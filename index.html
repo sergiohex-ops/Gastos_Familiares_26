@@ -235,6 +235,45 @@
       user-select:none;
     }
 
+
+    .toast {
+      position:fixed;
+      left:50%;
+      bottom:24px;
+      transform:translateX(-50%) translateY(20px);
+      background:#0f172a;
+      color:white;
+      padding:13px 16px;
+      border-radius:999px;
+      font-size:14px;
+      font-weight:800;
+      z-index:999999;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .22s ease, transform .22s ease;
+      box-shadow:0 12px 30px rgba(15,23,42,.25);
+      max-width:90vw;
+      text-align:center;
+    }
+
+    .toast.show {
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+
+    .save.saving {
+      opacity:.72;
+      cursor:not-allowed;
+      transform:scale(.995);
+    }
+
+    .save:disabled,
+    .secondary:disabled,
+    .choice:disabled {
+      opacity:.65;
+      cursor:not-allowed;
+    }
+
     @media(max-width:600px){ .app{max-width:none;width:100%;} .card{margin:12px;} .header{border-radius:0 0 22px 22px;} }
   </style>
 </head>
@@ -313,7 +352,7 @@
       </div>
       <label>Descripción</label><input id="descripcion" placeholder="Ej: pañales, supermercado, gasolina">
       <label>Monto</label><input id="monto" type="number" placeholder="150.00">
-      <button class="save" onclick="saveExpense()">💾 Guardar gasto</button>
+      <button id="saveExpenseBtn" class="save" onclick="saveExpense()">💾 Guardar gasto</button>
     </div>
   </div>
 
@@ -386,6 +425,8 @@
   </div>
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script>
 const CATEGORIES=[{id:"alimentacion",label:"Alimentación",emoji:"🛒"},{id:"transporte",label:"Transporte",emoji:"🚗"},{id:"casa",label:"Casa",emoji:"🏠"},{id:"alessia",label:"Alessia",emoji:"👶"},{id:"ocio",label:"Ocio",emoji:"🎬"},{id:"ropa",label:"Ropa",emoji:"👕"},{id:"mascotas",label:"Mascotas",emoji:"🐾"},{id:"otros",label:"Otros",emoji:"📦"}];
 const MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -407,11 +448,108 @@ function selectCategory(cat){selectedCategory=cat;document.querySelectorAll("[da
 function selectCurrency(currency){selectedCurrency=currency;document.querySelectorAll("[data-currency]").forEach(b=>b.classList.toggle("active",b.dataset.currency===currency));}
 function showTab(tab){["nuevo","ia","lista","resumen","graficos"].forEach(id=>{document.getElementById(id).classList.toggle("hidden",id!==tab);document.getElementById("btn"+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle("active",id===tab);});if(tab==="lista"||tab==="resumen")actualizarDatos(false);if(tab==="resumen")renderSummary();if(tab==="graficos")sincronizarDashboardsAutomatico();}
 function parseIaText(){const raw=document.getElementById("iaText").value.trim();if(!raw)return alert("Escribe un gasto primero.");const text=raw.toLowerCase();let who=selectedWho;if(text.includes("ale")||text.includes("alexandra"))who="Ale";if(text.includes("sergio")||text.includes("yo "))who="Sergio";let currency=(text.includes("dólar")||text.includes("dolar")||text.includes("usd")||text.includes("$"))?"USD":"PEN";let amount="";const amountMatch=text.match(/(?:s\/\.?|s\/|\$)?\s*(\d+(?:[.,]\d+)?)/);if(amountMatch)amount=amountMatch[1].replace(",",".");let card=who==="Ale"?"BCP Ale":"BCP Sergio";if(text.includes("bcp ale"))card="BCP Ale";else if(text.includes("bcp sergio"))card="BCP Sergio";else if(text.includes("diners"))card="Diners";else if(text.includes("yape"))card="Yape";else if(text.includes("bcp"))card=who==="Ale"?"BCP Ale":"BCP Sergio";const category=normalizeCat(text);let description=raw.replace(/ale|sergio|gast[oó]|gast[eé]|compr[oó]|compr[eé]|soles|d[oó]lares|usd|bcp ale|bcp sergio|diners|yape|con|por|s\/\.?/ig,"").replace(/\$/g,"").replace(/\d+(?:[.,]\d+)?/g,"").trim();if(!description){const catObj=CATEGORIES.find(c=>c.id===category);description=catObj?catObj.label:"Gasto";}selectWho(who);selectCard(card);selectCategory(category);selectCurrency(currency);document.getElementById("descripcion").value=description;document.getElementById("monto").value=amount;document.getElementById("iaText").value="";showTab("nuevo");alert("✨ Gasto interpretado. Revísalo y presiona Guardar gasto.");}
-async function saveExpense(){const fecha=document.getElementById("fecha").value||todayInputValue(),descripcion=document.getElementById("descripcion").value.trim(),monto=document.getElementById("monto").value;if(!descripcion||!monto)return alert("Falta descripción o monto.");try{await gas("addExpense",{data:{fecha,quien:selectedWho,categoria:selectedCategory,descripcion,monto,moneda:selectedCurrency,tarjeta:selectedCard}});document.getElementById("descripcion").value="";document.getElementById("monto").value="";setTodayDefault();const d=parseExpenseDate(fecha);selectedMonth=d.getMonth();selectedYear=d.getFullYear();await actualizarDatos();alert("✅ Gasto guardado");}catch(e){alert("Error al guardar: "+e.message);}}
-async function actualizarDatos(showError=true){try{const cfg=await gas("getConfigApp");if(cfg&&cfg.usdPen)APP_USD_PEN=Number(String(cfg.usdPen).replace(",","."))||3.80;expenses=await gas("getExpenses");budgets=await gas("getBudgetsApp");renderMonthYearFilters();renderEverything();}catch(e){if(showError)alert("Error al actualizar datos: "+e.message);}}
+let isSavingExpense=false;
+
+function showToast(message, type="ok"){
+  const toast=document.getElementById("toast");
+  if(!toast)return;
+  toast.textContent=message;
+  toast.style.background=type==="error"?"#991b1b":"#0f172a";
+  toast.classList.add("show");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer=setTimeout(()=>toast.classList.remove("show"),2200);
+}
+
+function buildLocalExpense(data){
+  const catObj=CATEGORIES.find(c=>c.id===data.categoria);
+  return {
+    id:"local-"+Date.now(),
+    fecha:formatInputDateForList(data.fecha),
+    quien:data.quien,
+    categoria:catObj?catObj.label:data.categoria,
+    descripcion:data.descripcion,
+    monto:Number(data.monto)||0,
+    moneda:data.moneda,
+    tarjeta:data.tarjeta,
+    pending:true
+  };
+}
+
+function formatInputDateForList(value){
+  const parts=String(value||"").split("-");
+  if(parts.length===3){
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return value||todayInputValue();
+}
+
+function setSaveButtonState(saving){
+  const btn=document.getElementById("saveExpenseBtn");
+  if(!btn)return;
+  btn.disabled=saving;
+  btn.classList.toggle("saving",saving);
+  btn.textContent=saving?"Guardando...":"💾 Guardar gasto";
+}
+
+async function saveExpense(){
+  if(isSavingExpense)return;
+
+  const fecha=document.getElementById("fecha").value||todayInputValue();
+  const descripcion=document.getElementById("descripcion").value.trim();
+  const monto=document.getElementById("monto").value;
+
+  if(!descripcion||!monto){
+    showToast("Falta descripción o monto.","error");
+    return;
+  }
+
+  const data={
+    fecha,
+    quien:selectedWho,
+    categoria:selectedCategory,
+    descripcion,
+    monto,
+    moneda:selectedCurrency,
+    tarjeta:selectedCard
+  };
+
+  isSavingExpense=true;
+  setSaveButtonState(true);
+
+  const localExpense=buildLocalExpense(data);
+  expenses=[localExpense,...expenses];
+
+  const d=parseExpenseDate(fecha);
+  selectedMonth=d.getMonth();
+  selectedYear=d.getFullYear();
+
+  document.getElementById("descripcion").value="";
+  document.getElementById("monto").value="";
+  setTodayDefault();
+
+  renderMonthYearFilters();
+  renderEverything();
+  showToast("✅ Gasto agregado");
+
+  try{
+    await gas("addExpense",{data});
+    localExpense.pending=false;
+    actualizarDatos(false);
+  }catch(e){
+    expenses=expenses.filter(x=>x.id!==localExpense.id);
+    renderEverything();
+    showToast("No se pudo guardar. Intenta otra vez.","error");
+    console.error(e);
+  }finally{
+    isSavingExpense=false;
+    setSaveButtonState(false);
+  }
+}
+
+function actualizarDatos(showError=true){try{const cfg=await gas("getConfigApp");if(cfg&&cfg.usdPen)APP_USD_PEN=Number(String(cfg.usdPen).replace(",","."))||3.80;expenses=await gas("getExpenses");budgets=await gas("getBudgetsApp");renderMonthYearFilters();renderEverything();}catch(e){if(showError)alert("Error al actualizar datos: "+e.message);}}
 function renderEverything(){renderHeaderTotal();renderList();renderSummary();}
 function renderHeaderTotal(){const f=getFilteredExpenses(),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0);document.getElementById("headerTotal").textContent=money(totalPen,"PEN");document.getElementById("headerMonth").textContent=`${MONTHS[selectedMonth]} ${selectedYear}`;}
-function renderList(){const list=document.getElementById("expensesList"),f=getFilteredExpenses();if(!f.length){list.innerHTML="<div class='empty'>No hay gastos en este mes.</div>";return;}list.innerHTML=f.map(e=>{const catId=normalizeCat(e.categoria),cat=CATEGORIES.find(c=>c.id===catId)||{emoji:"📦",label:e.categoria};return `<div class="expense"><div><strong>${cat.emoji} ${escapeHtml(e.descripcion)}</strong><div class="small">${escapeHtml(e.fecha)} · ${escapeHtml(e.quien)} · ${escapeHtml(e.categoria)} · ${escapeHtml(e.tarjeta)}</div></div><div class="amount">${money(e.monto,e.moneda)}</div></div>`;}).join("");}
+function renderList(){const list=document.getElementById("expensesList"),f=getFilteredExpenses();if(!f.length){list.innerHTML="<div class='empty'>No hay gastos en este mes.</div>";return;}list.innerHTML=f.map(e=>{const catId=normalizeCat(e.categoria),cat=CATEGORIES.find(c=>c.id===catId)||{emoji:"📦",label:e.categoria};return `<div class="expense"><div><strong>${cat.emoji} ${escapeHtml(e.descripcion)}</strong><div class="small">${escapeHtml(e.fecha)} · ${escapeHtml(e.quien)} · ${escapeHtml(e.categoria)} · ${escapeHtml(e.tarjeta)}${e.pending ? " · guardando…" : ""}</div></div><div class="amount">${money(e.monto,e.moneda)}</div></div>`;}).join("");}
 function renderSummary(){const f=getFilteredExpenses(),sergioPen=totalBy(f,"Sergio","PEN"),alePen=totalBy(f,"Ale","PEN"),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0),totalUsd=f.filter(e=>e.moneda==="USD").reduce((a,e)=>a+Number(e.monto||0),0),equivalent=totalPen+totalUsd*APP_USD_PEN;document.getElementById("sumSergioPen").textContent=money(sergioPen,"PEN");document.getElementById("sumAlePen").textContent=money(alePen,"PEN");document.getElementById("sumPen").textContent=money(totalPen,"PEN");document.getElementById("sumUsd").textContent=money(totalUsd,"USD");document.getElementById("sumEquivalent").textContent=money(equivalent,"PEN");renderInsights(f);renderInteractiveCharts(f);renderTopCategories(f);renderCardSummary(f);renderBudgets(f);}
 function totalBy(list,who,currency){return list.filter(e=>e.quien===who&&e.moneda===currency).reduce((a,e)=>a+Number(e.monto||0),0);}
 

@@ -30,3 +30,8 @@ Incluye animaciones suaves, dona interactiva por categoría y barras interactiva
 ## Face ID / Passkeys
 
 Esta versión agrega una pantalla de bloqueo local con Passkeys/WebAuthn. La credencial se guarda en el dispositivo del usuario. No es autenticación bancaria de servidor; es protección local para la PWA.
+
+
+## Guardado instantáneo
+
+Esta versión usa optimistic UI: bloquea doble click, muestra el gasto al instante y guarda en Sheet en segundo plano.
