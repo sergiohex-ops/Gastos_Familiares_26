@@ -195,6 +195,106 @@
       cursor:not-allowed;
     }
 
+
+    .sofar-hero {
+      background:linear-gradient(135deg,#15803d,#16a34a);
+      color:white;
+      border-radius:22px;
+      padding:20px;
+      box-shadow:0 12px 30px rgba(21,128,61,.18);
+      margin-bottom:14px;
+    }
+
+    .sofar-kicker {
+      font-size:12px;
+      font-weight:800;
+      opacity:.82;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      margin-bottom:8px;
+    }
+
+    .sofar-total {
+      font-size:38px;
+      font-weight:950;
+      line-height:1;
+      margin-bottom:8px;
+    }
+
+    .sofar-sub {
+      font-size:14px;
+      opacity:.88;
+    }
+
+    .sofar-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .sofar-mini {
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:18px;
+      padding:14px;
+    }
+
+    .sofar-mini-title {
+      font-size:12px;
+      font-weight:900;
+      color:#64748b;
+      margin-bottom:7px;
+    }
+
+    .sofar-mini-value {
+      font-size:20px;
+      font-weight:950;
+      color:#0f172a;
+    }
+
+    .sofar-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:8px;
+      font-size:14px;
+      font-weight:800;
+    }
+
+    .sofar-rank {
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .sofar-projection {
+      background:#ecfdf5;
+      border:1px solid #86efac;
+      border-radius:18px;
+      padding:16px;
+      color:#14532d;
+    }
+
+    .sofar-projection strong {
+      font-size:24px;
+      display:block;
+      margin-top:6px;
+      color:#166534;
+    }
+
+    .sofar-insight {
+      background:linear-gradient(135deg,#fff7ed,#fefce8);
+      border:1px solid #fed7aa;
+      color:#7c2d12;
+      border-radius:18px;
+      padding:16px;
+      font-size:14px;
+      line-height:1.45;
+      font-weight:700;
+    }
+
     @media(max-width:600px){ .app{max-width:none;width:100%;} .card{margin:12px;} .header{border-radius:0 0 22px 22px;} }
   </style>
 </head>
@@ -210,10 +310,11 @@
 
   <div class="tabs">
     <button id="btnNuevo" class="active" onclick="showTab('nuevo')">➕ Nuevo</button>
-    <button id="btnIa" onclick="showTab('ia')">✨ IA</button>
+    <button id="btnSofar" onclick="showTab('sofar')">🦥 So Far</button>
     <button id="btnLista" onclick="showTab('lista')">📋 Lista</button>
     <button id="btnResumen" onclick="showTab('resumen')">📈 Resumen</button>
     <button id="btnGraficos" onclick="showTab('graficos')">📊 Gráficos</button>
+    <button id="btnIa" onclick="showTab('ia')">✨ IA</button>
   </div>
 
   <div class="card">
@@ -248,6 +349,56 @@
       <label>Descripción</label><input id="descripcion" placeholder="Ej: pañales, supermercado, gasolina">
       <label>Monto</label><input id="monto" type="number" placeholder="150.00">
       <button id="saveExpenseBtn" class="save" onclick="saveExpense()">💾 Guardar gasto</button>
+    </div>
+  </div>
+
+
+  <div id="sofar" class="tab-panel hidden">
+    <div class="card">
+      <div class="sofar-hero">
+        <div class="sofar-kicker" id="sfMonthLabel">Mes seleccionado</div>
+        <div class="sofar-total" id="sfTotal">S/ 0.00</div>
+        <div class="sofar-sub" id="sfMonthStatus">Así van hasta ahora.</div>
+      </div>
+
+      <div class="sofar-grid">
+        <div class="sofar-mini">
+          <div class="sofar-mini-title">👨 Sergio</div>
+          <div class="sofar-mini-value" id="sfSergio">S/ 0.00</div>
+          <div class="bar-wrap"><div id="sfSergioBar" class="bar" style="width:0%"></div></div>
+          <div class="small" id="sfSergioPct">0%</div>
+        </div>
+
+        <div class="sofar-mini">
+          <div class="sofar-mini-title">👩 Ale</div>
+          <div class="sofar-mini-value" id="sfAle">S/ 0.00</div>
+          <div class="bar-wrap"><div id="sfAleBar" class="bar" style="width:0%"></div></div>
+          <div class="small" id="sfAlePct">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🏆 Top categorías</h3>
+      <div id="sfTopCategorias"></div>
+    </div>
+
+    <div class="card">
+      <h3>💳 Medio más usado</h3>
+      <div id="sfTopCard"></div>
+    </div>
+
+    <div class="card">
+      <h3>📈 Proyección</h3>
+      <div class="sofar-projection">
+        Si continúan al ritmo actual, cerrarían el mes cerca de:
+        <strong id="sfProjection">S/ 0.00</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🤖 Insight inteligente</h3>
+      <div id="sfInsight" class="sofar-insight">Aún no hay suficiente información.</div>
     </div>
   </div>
 
@@ -341,7 +492,7 @@ function selectWho(who){selectedWho=who;document.querySelectorAll("[data-who]").
 function selectCard(card){selectedCard=card;document.querySelectorAll("[data-card]").forEach(b=>b.classList.toggle("active",b.dataset.card===card));}
 function selectCategory(cat){selectedCategory=cat;document.querySelectorAll("[data-cat]").forEach(b=>b.classList.toggle("active",b.dataset.cat===cat));}
 function selectCurrency(currency){selectedCurrency=currency;document.querySelectorAll("[data-currency]").forEach(b=>b.classList.toggle("active",b.dataset.currency===currency));}
-function showTab(tab){["nuevo","ia","lista","resumen","graficos"].forEach(id=>{document.getElementById(id).classList.toggle("hidden",id!==tab);document.getElementById("btn"+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle("active",id===tab);});if(tab==="lista"||tab==="resumen")actualizarDatos(false);if(tab==="resumen")renderSummary();if(tab==="graficos")sincronizarDashboardsAutomatico();}
+function showTab(tab){["nuevo","sofar","lista","resumen","graficos","ia"].forEach(id=>{document.getElementById(id).classList.toggle("hidden",id!==tab);document.getElementById("btn"+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle("active",id===tab);});if(tab==="sofar"||tab==="lista"||tab==="resumen")actualizarDatos(false);if(tab==="sofar")renderSoFar();if(tab==="resumen")renderSummary();if(tab==="graficos")sincronizarDashboardsAutomatico();}
 function parseIaText(){const raw=document.getElementById("iaText").value.trim();if(!raw)return alert("Escribe un gasto primero.");const text=raw.toLowerCase();let who=selectedWho;if(text.includes("ale")||text.includes("alexandra"))who="Ale";if(text.includes("sergio")||text.includes("yo "))who="Sergio";let currency=(text.includes("dólar")||text.includes("dolar")||text.includes("usd")||text.includes("$"))?"USD":"PEN";let amount="";const amountMatch=text.match(/(?:s\/\.?|s\/|\$)?\s*(\d+(?:[.,]\d+)?)/);if(amountMatch)amount=amountMatch[1].replace(",",".");let card=who==="Ale"?"BCP Ale":"BCP Sergio";if(text.includes("bcp ale"))card="BCP Ale";else if(text.includes("bcp sergio"))card="BCP Sergio";else if(text.includes("diners"))card="Diners";else if(text.includes("yape"))card="Yape";else if(text.includes("bcp"))card=who==="Ale"?"BCP Ale":"BCP Sergio";const category=normalizeCat(text);let description=raw.replace(/ale|sergio|gast[oó]|gast[eé]|compr[oó]|compr[eé]|soles|d[oó]lares|usd|bcp ale|bcp sergio|diners|yape|con|por|s\/\.?/ig,"").replace(/\$/g,"").replace(/\d+(?:[.,]\d+)?/g,"").trim();if(!description){const catObj=CATEGORIES.find(c=>c.id===category);description=catObj?catObj.label:"Gasto";}selectWho(who);selectCard(card);selectCategory(category);selectCurrency(currency);document.getElementById("descripcion").value=description;document.getElementById("monto").value=amount;document.getElementById("iaText").value="";showTab("nuevo");alert("✨ Gasto interpretado. Revísalo y presiona Guardar gasto.");}
 let isSavingExpense=false;
 
@@ -442,11 +593,148 @@ async function saveExpense(){
 }
 
 async function actualizarDatos(showError=true){try{const cfg=await gas("getConfigApp");if(cfg&&cfg.usdPen)APP_USD_PEN=Number(String(cfg.usdPen).replace(",","."))||3.80;expenses=await gas("getExpenses");budgets=await gas("getBudgetsApp");renderMonthYearFilters();renderEverything();}catch(e){if(showError)alert("Error al actualizar datos: "+e.message);}}
-function renderEverything(){renderHeaderTotal();renderList();renderSummary();}
+function renderEverything(){renderHeaderTotal();renderList();renderSummary();renderSoFar();}
 function renderHeaderTotal(){const f=getFilteredExpenses(),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0);document.getElementById("headerTotal").textContent=money(totalPen,"PEN");document.getElementById("headerMonth").textContent=`${MONTHS[selectedMonth]} ${selectedYear}`;}
 function renderList(){const list=document.getElementById("expensesList"),f=getFilteredExpenses();if(!f.length){list.innerHTML="<div class='empty'>No hay gastos en este mes.</div>";return;}list.innerHTML=f.map(e=>{const catId=normalizeCat(e.categoria),cat=CATEGORIES.find(c=>c.id===catId)||{emoji:"📦",label:e.categoria};return `<div class="expense"><div><strong>${cat.emoji} ${escapeHtml(e.descripcion)}</strong><div class="small">${escapeHtml(e.fecha)} · ${escapeHtml(e.quien)} · ${escapeHtml(e.categoria)} · ${escapeHtml(e.tarjeta)}${e.pending ? " · guardando…" : ""}</div></div><div class="amount">${money(e.monto,e.moneda)}</div></div>`;}).join("");}
 function renderSummary(){const f=getFilteredExpenses(),sergioPen=totalBy(f,"Sergio","PEN"),alePen=totalBy(f,"Ale","PEN"),totalPen=f.filter(e=>e.moneda==="PEN").reduce((a,e)=>a+Number(e.monto||0),0),totalUsd=f.filter(e=>e.moneda==="USD").reduce((a,e)=>a+Number(e.monto||0),0),equivalent=totalPen+totalUsd*APP_USD_PEN;document.getElementById("sumSergioPen").textContent=money(sergioPen,"PEN");document.getElementById("sumAlePen").textContent=money(alePen,"PEN");document.getElementById("sumPen").textContent=money(totalPen,"PEN");document.getElementById("sumUsd").textContent=money(totalUsd,"USD");document.getElementById("sumEquivalent").textContent=money(equivalent,"PEN");renderInsights(f);renderInteractiveCharts(f);renderTopCategories(f);renderCardSummary(f);renderBudgets(f);}
 function totalBy(list,who,currency){return list.filter(e=>e.quien===who&&e.moneda===currency).reduce((a,e)=>a+Number(e.monto||0),0);}
+
+
+
+function totalEquivalentForExpense(e){
+  return e.moneda==="USD"?Number(e.monto||0)*APP_USD_PEN:Number(e.monto||0);
+}
+
+function getDaysInSelectedMonth(){
+  return new Date(selectedYear, Number(selectedMonth)+1, 0).getDate();
+}
+
+function renderSoFar(){
+  const f=getFilteredExpenses();
+
+  const total=f.reduce((a,e)=>a+totalEquivalentForExpense(e),0);
+  const sergio=f.filter(e=>e.quien==="Sergio").reduce((a,e)=>a+totalEquivalentForExpense(e),0);
+  const ale=f.filter(e=>e.quien==="Ale").reduce((a,e)=>a+totalEquivalentForExpense(e),0);
+
+  const monthLabel=document.getElementById("sfMonthLabel");
+  const totalEl=document.getElementById("sfTotal");
+  const statusEl=document.getElementById("sfMonthStatus");
+  const sergioEl=document.getElementById("sfSergio");
+  const aleEl=document.getElementById("sfAle");
+  const sergioBar=document.getElementById("sfSergioBar");
+  const aleBar=document.getElementById("sfAleBar");
+  const sergioPctEl=document.getElementById("sfSergioPct");
+  const alePctEl=document.getElementById("sfAlePct");
+
+  if(!totalEl)return;
+
+  const days=getDaysInSelectedMonth();
+  const today=new Date();
+  const isCurrent=today.getMonth()===Number(selectedMonth)&&today.getFullYear()===Number(selectedYear);
+  const day=isCurrent?Math.min(today.getDate(),days):days;
+  const monthPct=Math.round((day/days)*100);
+
+  const sergioPct=total>0?Math.round((sergio/total)*100):0;
+  const alePct=total>0?Math.round((ale/total)*100):0;
+
+  if(monthLabel)monthLabel.textContent=`${MONTHS[selectedMonth]} ${selectedYear}`;
+  if(totalEl)totalEl.textContent=money(total,"PEN");
+  if(statusEl)statusEl.textContent=`Día ${day} de ${days} · ${monthPct}% del mes transcurrido.`;
+  if(sergioEl)sergioEl.textContent=money(sergio,"PEN");
+  if(aleEl)aleEl.textContent=money(ale,"PEN");
+  if(sergioBar)sergioBar.style.width=`${sergioPct}%`;
+  if(aleBar)aleBar.style.width=`${alePct}%`;
+  if(sergioPctEl)sergioPctEl.textContent=`${sergioPct}% del total`;
+  if(alePctEl)alePctEl.textContent=`${alePct}% del total`;
+
+  renderSoFarTopCategories(f,total);
+  renderSoFarTopCard(f,total);
+  renderSoFarProjection(total,day,days);
+  renderSoFarInsight(f,total,sergio,ale);
+}
+
+function renderSoFarTopCategories(list,total){
+  const box=document.getElementById("sfTopCategorias");
+  if(!box)return;
+
+  const totals=getCategoryTotals(list);
+  const entries=Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  if(!entries.length){
+    box.innerHTML="<div class='empty'>Sin categorías todavía.</div>";
+    return;
+  }
+
+  const medals=["🥇","🥈","🥉"];
+  box.innerHTML=entries.map(([id,value],i)=>{
+    const cat=CATEGORIES.find(c=>c.id===id)||{emoji:"📦",label:id};
+    const pct=total>0?Math.round(value/total*100):0;
+    return `
+      <div style="margin-bottom:14px;">
+        <div class="sofar-row">
+          <div class="sofar-rank"><span>${medals[i]}</span><span>${cat.emoji} ${cat.label}</span></div>
+          <strong>${money(value,"PEN")}</strong>
+        </div>
+        <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+        <div class="small">${pct}% del total</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderSoFarTopCard(list,total){
+  const box=document.getElementById("sfTopCard");
+  if(!box)return;
+
+  const cards=getCardTotals(list);
+  const entries=Object.entries(cards).sort((a,b)=>b[1].equivalent-a[1].equivalent);
+
+  if(!entries.length){
+    box.innerHTML="<div class='empty'>Sin medios de pago todavía.</div>";
+    return;
+  }
+
+  const [card,data]=entries[0];
+  const pct=total>0?Math.round(data.equivalent/total*100):0;
+
+  box.innerHTML=`
+    <div class="sofar-row">
+      <div class="sofar-rank"><span>💳</span><span>${escapeHtml(card)}</span></div>
+      <strong>${money(data.equivalent,"PEN")}</strong>
+    </div>
+    <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+    <div class="small">${pct}% del gasto equivalente · ${data.count||0} movimiento(s)</div>
+  `;
+}
+
+function renderSoFarProjection(total,day,days){
+  const el=document.getElementById("sfProjection");
+  if(!el)return;
+
+  const projection=day>0?(total/day)*days:total;
+  el.textContent=money(projection,"PEN");
+}
+
+function renderSoFarInsight(list,total,sergio,ale){
+  const box=document.getElementById("sfInsight");
+  if(!box)return;
+
+  if(!list.length||total<=0){
+    box.textContent="Aún no hay suficientes gastos este mes para generar un insight.";
+    return;
+  }
+
+  const categoryEntries=Object.entries(getCategoryTotals(list)).sort((a,b)=>b[1]-a[1]);
+  const [topCat,topCatValue]=categoryEntries[0]||["otros",0];
+  const cat=CATEGORIES.find(c=>c.id===topCat)||{emoji:"📦",label:topCat};
+  const catPct=Math.round(topCatValue/total*100);
+
+  const sergioPct=Math.round(sergio/total*100);
+  const alePct=Math.round(ale/total*100);
+  const leader=ale>=sergio?`Ale concentra ${alePct}%`:`Sergio concentra ${sergioPct}%`;
+
+  box.innerHTML=`${cat.emoji} ${cat.label} representa ${catPct}% del gasto equivalente del mes. ${leader} de los gastos registrados hasta ahora.`;
+}
 
 
 function renderInsights(list){
