@@ -317,17 +317,11 @@
     <button id="btnIa" onclick="showTab('ia')">✨ IA</button>
   </div>
 
-  <div class="card">
-    <label>Filtrar por mes</label>
-    <div class="grid2">
-      <select id="filterMonth" onchange="applyDateFilter()"></select>
-      <select id="filterYear" onchange="applyDateFilter()"></select>
-    </div>
-  </div>
-
   <div id="nuevo" class="tab-panel">
     <div class="card">
       <label>Fecha</label><input id="fecha" type="date">
+      <label>Monto</label><input id="monto" type="number" inputmode="decimal" autofocus placeholder="150.00">
+      <label>Descripción</label><input id="descripcion" placeholder="Ej: pañales, supermercado, gasolina">
       <label>¿Quién gastó?</label>
       <div class="grid2">
         <button class="choice active" data-who="Sergio" onclick="selectWho('Sergio')">👨 Sergio</button>
@@ -345,10 +339,7 @@
       <div class="grid2">
         <button class="choice active" data-currency="PEN" onclick="selectCurrency('PEN')">🇵🇪 Soles</button>
         <button class="choice" data-currency="USD" onclick="selectCurrency('USD')">🇺🇸 Dólares</button>
-      </div>
-      <label>Descripción</label><input id="descripcion" placeholder="Ej: pañales, supermercado, gasolina">
-      <label>Monto</label><input id="monto" type="number" placeholder="150.00">
-      <button id="saveExpenseBtn" class="save" onclick="saveExpense()">💾 Guardar gasto</button>
+      </div>      <button id="saveExpenseBtn" class="save" onclick="saveExpense()">💾 Guardar gasto</button>
     </div>
   </div>
 
