@@ -312,7 +312,7 @@
   <div class="header">
     <h1>💰 Gastos Familiares</h1>
     <p>Sergio & Ale · Google Sheets</p>
-    <div class="total" id="headerTotal">S/ 0.00</label>
+    <div class="total" id="headerTotal">S/ 0.00</div>
     <p id="headerMonth">mes seleccionado</p>
   </div>
 
@@ -335,7 +335,17 @@
 
   <div id="nuevo" class="tab-panel">
     <div class="card">
-      <input id="fecha" type="date" style="position:absolute;opacity:0;width:0;height:0;">
+      <input
+  id="fecha"
+  type="date"
+  style="
+    position:absolute;
+    opacity:0;
+    width:1px;
+    height:1px;
+    left:-9999px;
+  "
+>
 
 <div id="fechaDisplay"
      onclick="openDatePicker()"
@@ -528,6 +538,19 @@ function updateFechaDisplay(){
 }
 
 
+function openDatePicker(){
+  const input=document.getElementById("fecha");
+
+  try{
+    if(input.showPicker){
+      input.showPicker();
+      return;
+    }
+  }catch(e){}
+
+  input.focus();
+  input.click();
+}
 
 function setTodayDefault(){
   document.getElementById("fecha").value=todayInputValue();
