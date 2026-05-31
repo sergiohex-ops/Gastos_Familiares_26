@@ -297,6 +297,13 @@
 
     @media(max-width:600px){ .app{max-width:none;width:100%;} .card{margin:12px;} .header{border-radius:0 0 22px 22px;} }
   .date-compact{max-width:220px;padding:10px 12px;font-size:15px;margin-bottom:12px;}
+
+#monto{
+  font-size:28px;
+  font-weight:800;
+  text-align:center;
+}
+
 </style>
 </head>
 <body>
@@ -328,10 +335,20 @@
 
   <div id="nuevo" class="tab-panel">
     <div class="card">
-      <input id="fecha" type="date" style="display:none">
+      <input
+  id="fecha"
+  type="date"
+  style="
+    position:absolute;
+    opacity:0;
+    width:1px;
+    height:1px;
+    left:-9999px;
+  "
+>
 
 <div id="fechaDisplay"
-     onclick="document.getElementById('fecha').showPicker ? document.getElementById('fecha').showPicker() : document.getElementById('fecha').click();"
+     onclick="openDatePicker()"
      style="
        background:#f8fafc;
        border:1.5px solid #e2e8f0;
@@ -520,6 +537,21 @@ function updateFechaDisplay(){
       : `📅 ${text}`;
 }
 
+
+function openDatePicker(){
+  const input=document.getElementById("fecha");
+
+  try{
+    if(input.showPicker){
+      input.showPicker();
+      return;
+    }
+  }catch(e){}
+
+  input.focus();
+  input.click();
+}
+
 function setTodayDefault(){
   document.getElementById("fecha").value=todayInputValue();
   updateFechaDisplay();
@@ -632,6 +664,7 @@ async function saveExpense(){
   }finally{
     isSavingExpense=false;
     setSaveButtonState(false);
+    setTimeout(()=>{document.getElementById('monto')?.focus();},100);
   }
 }
 
