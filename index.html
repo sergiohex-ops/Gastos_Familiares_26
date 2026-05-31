@@ -296,7 +296,8 @@
     }
 
     @media(max-width:600px){ .app{max-width:none;width:100%;} .card{margin:12px;} .header{border-radius:0 0 22px 22px;} }
-  </style>
+  .date-compact{max-width:220px;padding:10px 12px;font-size:15px;margin-bottom:12px;}
+</style>
 </head>
 <body>
 
@@ -327,7 +328,7 @@
 
   <div id="nuevo" class="tab-panel">
     <div class="card">
-      <label>Fecha</label><input id="fecha" type="date">
+      <label>Fecha</label><input id="fecha" class="date-compact" type="date">
       <label>Monto</label><input id="monto" type="number" inputmode="decimal" autofocus placeholder="150.00">
       <label>Descripción</label><input id="descripcion" placeholder="Ej: pañales, supermercado, gasolina">
       <label>¿Quién gastó?</label>
