@@ -335,21 +335,10 @@
 
   <div id="nuevo" class="tab-panel">
     <div class="card">
-      <input
-  id="fecha"
-  type="date"
-  style="
-    position:absolute;
-    opacity:0;
-    width:1px;
-    height:1px;
-    left:-9999px;
-  "
->
-
-<div id="fechaDisplay"
-     onclick="openDatePicker()"
+      <label for="fecha"
+     id="fechaDisplay"
      style="
+       display:block;
        background:#f8fafc;
        border:1.5px solid #e2e8f0;
        border-radius:14px;
@@ -360,7 +349,17 @@
        cursor:pointer;
      ">
   📅 Hoy
-</div>
+</label>
+
+<input
+  id="fecha"
+  type="date"
+  style="
+    width:100%;
+    margin-top:-8px;
+    margin-bottom:14px;
+  "
+>
       <label>Monto</label><input id="monto" type="number" inputmode="decimal" autofocus placeholder="150.00">
       <label>Descripción</label><input id="descripcion" placeholder="Ej: pañales, supermercado, gasolina">
       <label>¿Quién gastó?</label>
@@ -538,19 +537,7 @@ function updateFechaDisplay(){
 }
 
 
-function openDatePicker(){
-  const input=document.getElementById("fecha");
 
-  try{
-    if(input.showPicker){
-      input.showPicker();
-      return;
-    }
-  }catch(e){}
-
-  input.focus();
-  input.click();
-}
 
 function setTodayDefault(){
   document.getElementById("fecha").value=todayInputValue();
