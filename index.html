@@ -317,6 +317,14 @@
     <button id="btnIa" onclick="showTab('ia')">✨ IA</button>
   </div>
 
+  <div class="card">
+    <label>Filtrar por mes</label>
+    <div class="grid2">
+      <select id="filterMonth" onchange="applyDateFilter()"></select>
+      <select id="filterYear" onchange="applyDateFilter()"></select>
+    </div>
+  </div>
+
   <div id="nuevo" class="tab-panel">
     <div class="card">
       <label>Fecha</label><input id="fecha" type="date">
@@ -339,7 +347,9 @@
       <div class="grid2">
         <button class="choice active" data-currency="PEN" onclick="selectCurrency('PEN')">🇵🇪 Soles</button>
         <button class="choice" data-currency="USD" onclick="selectCurrency('USD')">🇺🇸 Dólares</button>
-      </div>      <button id="saveExpenseBtn" class="save" onclick="saveExpense()">💾 Guardar gasto</button>
+      </div>
+      
+      <button id="saveExpenseBtn" class="save" onclick="saveExpense()">💾 Guardar gasto</button>
     </div>
   </div>
 
